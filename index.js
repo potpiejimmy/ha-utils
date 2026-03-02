@@ -50,16 +50,19 @@ async function formatKlassenarbeiten() {
     const raw = await readFile(klassenarbeiten, 'utf-8');
     const data = JSON.parse(raw);
 
-    const lines = ['## Die n\u00e4chsten Klassenarbeiten', ''];
+    const lines = [];
     let currentKW = null;
+    let kwCount = 0;
     for (const termin of data.termine) {
         const emoji = termin.art === 'Klausuren' ? '\uD83D\uDCDD' : '\u2139\uFE0F';
         const date = new Date(termin.datumISO);
         const kw = getISOWeek(date);
         if (kw !== currentKW) {
+            if (kwCount >= 3) break;
             if (currentKW !== null) lines.push('');
             lines.push(`_KW ${kw}_`);
             currentKW = kw;
+            kwCount++;
         }
         const formattedDate = date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'numeric' });
         lines.push(`${emoji} **${formattedDate}** - ${termin.text}`);
@@ -106,7 +109,7 @@ async function formatVertretungen() {
         byDatum[e.datum].push(e);
     }
 
-    const lines = ['## Vertretungen', ''];
+    const lines = [];
     for (const datum of Object.keys(byDatum)) {
         const [d, m, y] = datum.split('.');
         const date = new Date(Number(y), Number(m) - 1, Number(d));
