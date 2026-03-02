@@ -99,7 +99,7 @@ async function formatVertretungen() {
 
     const resolveLehrer = (s) =>
         s.split('\u2192').map(part =>
-            part.split(', ').map(a => lehrerMap[a.trim()] || a.trim()).join(', ')
+            part.split(', ').map(a => { const n = lehrerMap[a.trim()] || a.trim(); return n.split(' ').pop(); }).join(', ')
         ).join(' \u2192 ');
 
     const resolveFach = (s) =>
@@ -147,7 +147,8 @@ async function formatVertretungen() {
                 : nums.length === 1 ? `${nums[0]}. Std.` : '';
             const fach = e.fach ? resolveFach(e.fach) : '';
             const lehr = e.lehrer ? resolveLehrer(e.lehrer) : '';
-            lines.push(`|${emoji} ${stunde} ${name}|${fach}|${lehr}|${e.raum || ''}|${e.text || ''}|`);
+            const raum = (e.raum || '').replace(/\u2192/g, ' \u2192 ');
+            lines.push(`|${emoji} ${stunde} ${name}|${fach}|${lehr}|${raum}|${e.text || ''}|`);
         }
         lines.push('');
     }
