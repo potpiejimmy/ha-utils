@@ -32,7 +32,7 @@ app.get("/api/klassenarbeiten", async (req, res) => {
 });
 
 app.get("/api/vertretungen", async (req, res) => {
-  res.send(markdownOrJson(req, await formatVertretungen()));
+  res.send(markdownOrJson(req, await formatVertretungen(req.query.klasse)));
 });
 
 app.listen(port, () => {
@@ -87,7 +87,7 @@ async function formatKlassenarbeiten() {
     return { markdown: lines.join('\n') };
 }
 
-async function formatVertretungen() {
+async function formatVertretungen(klasse) {
     const [rawDsb, rawLehrerFile, rawFaecherFile] = await Promise.all([
         readFile(vertretungen, 'utf-8'),
         readFile(lehrer, 'utf-8'),
@@ -105,8 +105,9 @@ async function formatVertretungen() {
     const resolveFach = (s) =>
         s.split('\u2192').map(a => faecherMap[a.trim()] || a.trim()).join(' \u2192 ');
 
-    const klasseLabel = { '5c': 'Julian', '8c': 'Enya' };
-    const relevant = data.alleEintraege.filter(e => e.klasse === '5c' || e.klasse === '8c');
+    const relevant = klasse
+        ? data.alleEintraege.filter(e => e.klasse === klasse)
+        : data.alleEintraege;
 
     // Group by datum, preserving insertion order
     const byDatum = {};
@@ -116,13 +117,16 @@ async function formatVertretungen() {
     }
 
     const lines = [];
+    if (relevant.length === 0) {
+        lines.push('_Keine Einträge_');
+    }
     for (const datum of Object.keys(byDatum)) {
         const [d, m, y] = datum.split('.');
         const date = new Date(Number(y), Number(m) - 1, Number(d));
         const weekday = date.toLocaleDateString('de-DE', { weekday: 'long' });
         const formattedDate = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' });
-        lines.push(`|**${weekday}**|**${formattedDate}**||||`);
-        lines.push('|-|-|-|-|-|');
+        lines.push(`||**${weekday}**|**${formattedDate}**||||`);
+        lines.push('|-|-|-|-|-|-|');
 
         // Aggregate consecutive entries that differ only in "stunde"
         const groups = [];
@@ -138,7 +142,6 @@ async function formatVertretungen() {
 
         for (const { entry: e, stunden } of groups) {
             const emoji = e.entfall === 'x' ? '\u274C' : '\uD83D\uDD04';
-            const name = klasseLabel[e.klasse];
             const nums = [...new Set(
                 stunden.flatMap(s => s ? s.split('-').map(p => parseInt(p.trim())).filter(n => !isNaN(n)) : [])
             )].sort((a, b) => a - b);
@@ -148,7 +151,7 @@ async function formatVertretungen() {
             const fach = e.fach ? resolveFach(e.fach) : '';
             const lehr = e.lehrer ? resolveLehrer(e.lehrer) : '';
             const raum = (e.raum || '').replace(/\u2192/g, ' \u2192 ');
-            lines.push(`|${emoji} ${stunde} ${name}|${fach}|${lehr}|${raum}|${e.text || ''}|`);
+            lines.push(`|${emoji}|${stunde}|${fach}|${lehr}|${raum}|${e.text || ''}|`);
         }
         lines.push('');
     }
