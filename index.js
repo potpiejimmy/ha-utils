@@ -28,16 +28,21 @@ app.get('/', (req, res) => {
 });
 
 app.get("/api/klassenarbeiten", async (req, res) => {
-  res.send(await formatKlassenarbeiten());
+  res.send(markdownOrJson(req, await formatKlassenarbeiten()));
 });
 
 app.get("/api/vertretungen", async (req, res) => {
-  res.send(await formatVertretungen());
+  res.send(markdownOrJson(req, await formatVertretungen()));
 });
 
 app.listen(port, () => {
   console.log(`HA Utils listening on port ${port}`);
 });
+
+function markdownOrJson(req, data) {
+    if (req.query.md) return data.markdown.replace(/\n/g, "<br/>");
+    return data;
+}
 
 function getISOWeek(date) {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -64,8 +69,9 @@ async function formatKlassenarbeiten() {
             currentKW = kw;
             kwCount++;
         }
-        const formattedDate = date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'numeric' });
-        lines.push(`${emoji} **${formattedDate}** - ${termin.text}`);
+        const formattedDate = date.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric' });
+        const text = termin.text.replace(/\b5c\b/g, 'Julian').replace(/\b8c\b/g, 'Enya').replace(/Arbeit/g, '').trim();
+        lines.push(`${emoji} **${text}** - ${formattedDate}`);
     }
 
     const timestamp = new Date(data.timestamp).toLocaleString('de-DE', {
@@ -113,8 +119,10 @@ async function formatVertretungen() {
     for (const datum of Object.keys(byDatum)) {
         const [d, m, y] = datum.split('.');
         const date = new Date(Number(y), Number(m) - 1, Number(d));
-        const formattedDate = date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'numeric' });
-        lines.push(`**${formattedDate}**`);
+        const weekday = date.toLocaleDateString('de-DE', { weekday: 'long' });
+        const formattedDate = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' });
+        lines.push(`|**${weekday}**|**${formattedDate}**||||`);
+        lines.push('|-|-|-|-|-|');
 
         // Aggregate consecutive entries that differ only in "stunde"
         const groups = [];
@@ -139,8 +147,7 @@ async function formatVertretungen() {
                 : nums.length === 1 ? `${nums[0]}. Std.` : '';
             const fach = e.fach ? resolveFach(e.fach) : '';
             const lehr = e.lehrer ? resolveLehrer(e.lehrer) : '';
-            const parts = [name, stunde, fach, lehr, e.raum, e.text].filter(Boolean);
-            lines.push(`${emoji} ${parts.join(' | ')}`);
+            lines.push(`|${emoji} ${stunde} ${name}|${fach}|${lehr}|${e.raum || ''}|${e.text || ''}|`);
         }
         lines.push('');
     }
