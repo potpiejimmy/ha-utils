@@ -1,0 +1,25 @@
+{
+  "name": "ha-utils",
+  "version": "1.0.0",
+  "description": "Utilities for Home Assistant",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/potpiejimmy/ha-utils.git"
+  },
+  "author": "Thorsten Liese",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/potpiejimmy/ha-utils/issues"
+  },
+  "homepage": "https://github.com/potpiejimmy/ha-utils#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "nocache": "^4.0.0"
+  }
+}
