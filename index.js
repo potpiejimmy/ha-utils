@@ -27,11 +27,11 @@ app.get('/', (req, res) => {
   res.send('HA Utils up and running.');
 });
 
-app.get("/klassenarbeiten", async (req, res) => {
+app.get("/api/klassenarbeiten", async (req, res) => {
   res.send(await formatKlassenarbeiten());
 });
 
-app.get("/vertretungen", async (req, res) => {
+app.get("/api/vertretungen", async (req, res) => {
   res.send(await formatVertretungen());
 });
 
