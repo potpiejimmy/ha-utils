@@ -81,10 +81,11 @@ async function formatKlassenarbeiten() {
         hour: '2-digit',
         minute: '2-digit',
     });
-    lines.push('');
-    lines.push(`Letzte Aktualisierung: ${timestamp}`);
 
-    return { markdown: lines.join('\n') };
+    return {
+        markdown: lines.join('\n'),
+        lastUpdate: timestamp
+    };
 }
 
 async function formatVertretungen(klasse) {
@@ -156,7 +157,8 @@ async function formatVertretungen(klasse) {
         lines.push('');
     }
 
-    lines.push(`Letzte Aktualisierung: ${data.lastUpdate}`);
-
-    return { markdown: lines.join('\n') };
+    return {
+        markdown: lines.join('\n'),
+        lastUpdate: data.lastUpdate
+    };
 }
