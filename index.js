@@ -37,7 +37,8 @@ app.get("/api/alert", async (req, res) => {
 });
 
 app.get("/api/vertretungen", async (req, res) => {
-  res.send(markdownOrJson(req, await formatVertretungen(req.query.klasse)));
+  const klassen = req.query.klassen ? req.query.klassen.split(',').map(k => k.trim()) : [];
+  res.send(await formatVertretungen(klassen));
 });
 
 app.listen(port, () => {
@@ -113,7 +114,7 @@ async function formatAlert() {
     };
 }
 
-async function formatVertretungen(klasse) {
+async function formatVertretungen(klassen) {
     const [rawDsb, rawLehrerFile, rawFaecherFile] = await Promise.all([
         readFile(vertretungen, 'utf-8'),
         readFile(lehrer, 'utf-8'),
@@ -131,59 +132,61 @@ async function formatVertretungen(klasse) {
     const resolveFach = (s) =>
         s.split('\u2192').map(a => faecherMap[a.trim()] || a.trim()).join(' \u2192 ');
 
-    const relevant = klasse
-        ? data.alleEintraege.filter(e => e.klasse === klasse)
-        : data.alleEintraege;
+    const result = {};
 
-    // Group by datum, preserving insertion order
-    const byDatum = {};
-    for (const e of relevant) {
-        if (!byDatum[e.datum]) byDatum[e.datum] = [];
-        byDatum[e.datum].push(e);
-    }
+    for (const klasse of klassen) {
+        const relevant = data.alleEintraege.filter(e => e.klasse === klasse);
 
-    const lines = [];
-    if (relevant.length === 0) {
-        lines.push('_Keine Einträge_');
-    }
-    for (const datum of Object.keys(byDatum)) {
-        const [d, m, y] = datum.split('.');
-        const date = new Date(Number(y), Number(m) - 1, Number(d));
-        const weekday = date.toLocaleDateString('de-DE', { weekday: 'long' });
-        const formattedDate = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' });
-        lines.push(`||**${weekday}**|**${formattedDate}**||||`);
-        lines.push('|-|-|-|-|-|-|');
+        // Group by datum, preserving insertion order
+        const byDatum = {};
+        for (const e of relevant) {
+            if (!byDatum[e.datum]) byDatum[e.datum] = [];
+            byDatum[e.datum].push(e);
+        }
 
-        // Aggregate consecutive entries that differ only in "stunde"
-        const groups = [];
-        for (const e of byDatum[datum]) {
-            const key = `${e.klasse}|${e.fach}|${e.raum}|${e.text}|${e.entfall}|${e.lehrer}`;
-            const last = groups[groups.length - 1];
-            if (last && last.key === key) {
-                last.stunden.push(e.stunde);
-            } else {
-                groups.push({ key, entry: e, stunden: [e.stunde] });
+        const lines = [];
+        if (relevant.length === 0) {
+            lines.push('_Keine Einträge_');
+        }
+        for (const datum of Object.keys(byDatum)) {
+            const [d, m, y] = datum.split('.');
+            const date = new Date(Number(y), Number(m) - 1, Number(d));
+            const weekday = date.toLocaleDateString('de-DE', { weekday: 'long' });
+            const formattedDate = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' });
+            lines.push(`||**${weekday}**|**${formattedDate}**||||`);
+            lines.push('|-|-|-|-|-|-|');
+
+            // Aggregate consecutive entries that differ only in "stunde"
+            const groups = [];
+            for (const e of byDatum[datum]) {
+                const key = `${e.klasse}|${e.fach}|${e.raum}|${e.text}|${e.entfall}|${e.lehrer}`;
+                const last = groups[groups.length - 1];
+                if (last && last.key === key) {
+                    last.stunden.push(e.stunde);
+                } else {
+                    groups.push({ key, entry: e, stunden: [e.stunde] });
+                }
             }
+
+            for (const { entry: e, stunden } of groups) {
+                const emoji = e.entfall === 'x' ? '\u274C' : '\uD83D\uDD04';
+                const nums = [...new Set(
+                    stunden.flatMap(s => s ? s.split('-').map(p => parseInt(p.trim())).filter(n => !isNaN(n)) : [])
+                )].sort((a, b) => a - b);
+                const stunde = nums.length >= 2
+                    ? `${nums[0]}.-${nums[nums.length - 1]}. Std.`
+                    : nums.length === 1 ? `${nums[0]}. Std.` : '';
+                const fach = e.fach ? resolveFach(e.fach) : '';
+                const lehr = e.lehrer ? resolveLehrer(e.lehrer) : '';
+                const raum = (e.raum || '').replace(/\u2192/g, ' \u2192 ');
+                lines.push(`|${emoji}|${stunde}|${fach}|${lehr}|${raum}|${e.text || ''}|`);
+            }
+            lines.push('');
         }
 
-        for (const { entry: e, stunden } of groups) {
-            const emoji = e.entfall === 'x' ? '\u274C' : '\uD83D\uDD04';
-            const nums = [...new Set(
-                stunden.flatMap(s => s ? s.split('-').map(p => parseInt(p.trim())).filter(n => !isNaN(n)) : [])
-            )].sort((a, b) => a - b);
-            const stunde = nums.length >= 2
-                ? `${nums[0]}.-${nums[nums.length - 1]}. Std.`
-                : nums.length === 1 ? `${nums[0]}. Std.` : '';
-            const fach = e.fach ? resolveFach(e.fach) : '';
-            const lehr = e.lehrer ? resolveLehrer(e.lehrer) : '';
-            const raum = (e.raum || '').replace(/\u2192/g, ' \u2192 ');
-            lines.push(`|${emoji}|${stunde}|${fach}|${lehr}|${raum}|${e.text || ''}|`);
-        }
-        lines.push('');
+        result[klasse] = { markdown: lines.join('\n') };
     }
 
-    return {
-        markdown: lines.join('\n'),
-        lastUpdate: data.lastUpdate
-    };
+    result.lastUpdate = data.lastUpdate;
+    return result;
 }
