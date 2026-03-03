@@ -1,13 +1,14 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import nocache from 'nocache';
-import { readFile } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
 
 const port = process.env.PORT || 3000;
 const klassenarbeiten = process.env.HA_FILE_KLASSENARBEITEN || './samples/schulportal-result.json';
 const vertretungen = process.env.HA_FILE_VERTRETUNGEN || './samples/dsb-result.json';
 const faecher = process.env.HA_FILE_FAECHER || './samples/faecher.json';
 const lehrer = process.env.HA_FILE_LEHRER || './samples/lehrer.json';
+const alert = process.env.HA_FILE_ALERT || './samples/current_alert.md';
 
 const app = express();
 
@@ -29,6 +30,10 @@ app.get('/', (req, res) => {
 
 app.get("/api/klassenarbeiten", async (req, res) => {
   res.send(markdownOrJson(req, await formatKlassenarbeiten()));
+});
+
+app.get("/api/alert", async (req, res) => {
+  res.send(await formatAlert());
 });
 
 app.get("/api/vertretungen", async (req, res) => {
@@ -84,6 +89,26 @@ async function formatKlassenarbeiten() {
 
     return {
         markdown: lines.join('\n'),
+        lastUpdate: timestamp
+    };
+}
+
+async function formatAlert() {
+    const fileStat = await stat(alert);
+    const mtime = fileStat.mtime;
+    const ageMs = Date.now() - mtime.getTime();
+    const markdown = ageMs > 24 * 60 * 60 * 1000 ? '' : await readFile(alert, 'utf-8');
+
+    const timestamp = mtime.toLocaleString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+
+    return {
+        markdown,
         lastUpdate: timestamp
     };
 }
