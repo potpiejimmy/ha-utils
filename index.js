@@ -99,7 +99,8 @@ async function formatAlert() {
     const fileStat = await stat(alert);
     const mtime = fileStat.mtime;
     const ageMs = Date.now() - mtime.getTime();
-    const markdown = ageMs > 24 * 60 * 60 * 1000 ? '' : await readFile(alert, 'utf-8');
+    // only show for 16 hours max
+    const markdown = ageMs > 16 * 60 * 60 * 1000 ? '' : await readFile(alert, 'utf-8');
 
     const timestamp = mtime.toLocaleString('de-DE', {
         day: '2-digit',
