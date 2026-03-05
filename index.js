@@ -155,8 +155,9 @@ async function formatVertretungen(klassen) {
             const [d, m, y] = datum.split('.');
             const date = new Date(Number(y), Number(m) - 1, Number(d));
             const weekday = date.toLocaleDateString('de-DE', { weekday: 'long', timeZone: 'Europe/Berlin' });
-            const formattedDate = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', timeZone: 'Europe/Berlin' });
-            lines.push(`||**${weekday}**|**${formattedDate}**||||`);
+            const formattedDay = date.toLocaleDateString('de-DE', { day: 'numeric', timeZone: 'Europe/Berlin' });
+            const formattedMonth = date.toLocaleDateString('de-DE', { month: 'long', timeZone: 'Europe/Berlin' });
+            lines.push(`|${formattedDay}.|${formattedMonth}|${weekday}||||`);
             lines.push('|-|-|-|-|-|-|');
 
             // Aggregate consecutive entries that differ only in "stunde"
