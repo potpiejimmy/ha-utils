@@ -75,7 +75,7 @@ async function formatKlassenarbeiten() {
             currentKW = kw;
             kwCount++;
         }
-        const formattedDate = date.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric' });
+        const formattedDate = date.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric', timeZone: 'Europe/Berlin' });
         const text = termin.text.replace(/\b5c\b/g, 'Julian').replace(/\b8c\b/g, 'Enya').replace(/Arbeit/g, '').trim();
         lines.push(`${emoji} **${text}** - ${formattedDate}`);
     }
@@ -86,6 +86,7 @@ async function formatKlassenarbeiten() {
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: 'Europe/Berlin',
     });
 
     return {
@@ -106,6 +107,7 @@ async function formatAlert() {
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: 'Europe/Berlin',
     });
 
     return {
@@ -151,8 +153,8 @@ async function formatVertretungen(klassen) {
         for (const datum of Object.keys(byDatum)) {
             const [d, m, y] = datum.split('.');
             const date = new Date(Number(y), Number(m) - 1, Number(d));
-            const weekday = date.toLocaleDateString('de-DE', { weekday: 'long' });
-            const formattedDate = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' });
+            const weekday = date.toLocaleDateString('de-DE', { weekday: 'long', timeZone: 'Europe/Berlin' });
+            const formattedDate = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', timeZone: 'Europe/Berlin' });
             lines.push(`||**${weekday}**|**${formattedDate}**||||`);
             lines.push('|-|-|-|-|-|-|');
 
