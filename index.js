@@ -161,7 +161,7 @@ async function formatVertretungen(klassen) {
             // Aggregate consecutive entries that differ only in "stunde"
             const groups = [];
             for (const e of byDatum[datum]) {
-                const key = `${e.klasse}|${e.fach}|${e.raum}|${e.text}|${e.entfall}|${e.lehrer}`;
+                const key = `${e.klasse}|${e.fach}|${e.raum}|${e.entfall}|${e.lehrer}`;
                 const last = groups[groups.length - 1];
                 if (last && last.key === key) {
                     last.stunden.push(e.stunde);
