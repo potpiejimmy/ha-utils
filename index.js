@@ -135,7 +135,7 @@ async function formatVertretungen(klassen) {
     const result = {};
 
     for (const klasse of klassen) {
-        const relevant = data.alleEintraege.filter(e => e.klasse === klasse);
+        const relevant = data.relevanteEintraege.filter(e => e.klasse === klasse);
 
         // Group by datum, preserving insertion order
         const byDatum = {};
