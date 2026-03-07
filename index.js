@@ -154,11 +154,8 @@ async function formatVertretungen(klassen) {
         for (const datum of Object.keys(byDatum)) {
             const [d, m, y] = datum.split('.');
             const date = new Date(Number(y), Number(m) - 1, Number(d));
-            const weekday = date.toLocaleDateString('de-DE', { weekday: 'long', timeZone: 'Europe/Berlin' });
-            const formattedDay = date.toLocaleDateString('de-DE', { day: 'numeric', timeZone: 'Europe/Berlin' });
-            const formattedMonth = date.toLocaleDateString('de-DE', { month: 'long', timeZone: 'Europe/Berlin' });
-            lines.push(`|${formattedDay}.|${formattedMonth}|${weekday}||||`);
-            lines.push('|-|-|-|-|-|-|');
+            const formattedDate = date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Berlin' });
+            lines.push(`**${formattedDate}**`);
 
             // Aggregate consecutive entries that differ only in "stunde"
             const groups = [];
@@ -183,7 +180,7 @@ async function formatVertretungen(klassen) {
                 const fach = e.fach ? resolveFach(e.fach) : '';
                 const lehr = e.lehrer ? resolveLehrer(e.lehrer) : '';
                 const raum = (e.raum || '').replace(/\u2192/g, ' \u2192 ');
-                lines.push(`|${emoji}|${stunde}|${fach}|${lehr}|${raum}|${e.text || ''}|`);
+                lines.push(`${emoji} **${stunde}** **${fach}** | ${lehr} ${raum} ${e.text || ''}`);
             }
             lines.push('');
         }
